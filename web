@@ -1,0 +1,266 @@
+// ── Página web ──
+const char pagina[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>Caja Musical Laufey</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:#0f0f0d;color:#e8e6de;max-width:420px;margin:0 auto}
+.header{background:#1a1a17;padding:1.2rem 1.25rem;border-bottom:0.5px solid #2e2e2b}
+.h-title{font-size:18px;font-weight:500;margin-bottom:3px}
+.h-sub{font-size:12px;color:#9a9890;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#5dcaa5;display:inline-block}
+.section{padding:1rem 1.25rem;border-bottom:0.5px solid #2e2e2b}
+.sec-label{font-size:11px;font-weight:500;text-transform:uppercase;
+           letter-spacing:.06em;color:#6a6a62;margin-bottom:.75rem}
+.song-item{display:flex;align-items:center;gap:10px;padding:.65rem .75rem;
+           border-radius:8px;border:0.5px solid #2e2e2b;margin-bottom:6px;
+           cursor:pointer;background:#1a1a17;transition:all .15s}
+.song-item.active{border-color:#5dcaa5;background:#04342C}
+.song-item.active .song-name,.song-item.active .song-dur{color:#5dcaa5}
+.song-num{font-size:13px;color:#6a6a62;min-width:16px}
+.song-info{flex:1}
+.song-name{font-size:14px;font-weight:500;color:#e8e6de}
+.song-dur{font-size:12px;color:#6a6a62}
+.bars{display:flex;gap:2px;align-items:flex-end;height:16px}
+.bar{width:3px;border-radius:2px;background:#5dcaa5}
+.nota-wrap{text-align:center;padding:1rem;background:#1a1a17;
+           border-radius:8px;margin-bottom:.75rem}
+.nota-big{font-size:32px;font-weight:500}
+.nota-sub{font-size:11px;color:#6a6a62;margin-top:3px}
+.prog-bar{width:100%;height:4px;background:#2e2e2b;border-radius:20px;
+          overflow:hidden;margin-bottom:4px}
+.prog-fill{height:100%;background:#5dcaa5;border-radius:20px;
+           transition:width .3s;width:0%}
+.prog-times{display:flex;justify-content:space-between;
+            font-size:11px;color:#6a6a62;margin-bottom:.75rem}
+.player{display:flex;align-items:center;justify-content:space-between}
+.play-btn{width:48px;height:48px;border-radius:50%;background:#5dcaa5;
+          display:flex;align-items:center;justify-content:center;
+          font-size:20px;cursor:pointer;border:none;color:#04342C}
+.ctrl-btn{width:38px;height:38px;border-radius:50%;
+          border:0.5px solid #3a3a38;display:flex;align-items:center;
+          justify-content:center;color:#9a9890;font-size:16px;
+          cursor:pointer;background:transparent}
+.speed-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.spd{padding:7px 4px;border-radius:8px;border:0.5px solid #2e2e2b;
+     font-size:12px;text-align:center;cursor:pointer;
+     color:#9a9890;background:#1a1a17;transition:all .15s}
+.spd.on{background:#0d2e26;color:#5dcaa5;border-color:#5dcaa5}
+.servo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.servo{aspect-ratio:1;border-radius:6px;border:0.5px solid #2e2e2b;
+       display:flex;align-items:center;justify-content:center;
+       font-size:11px;color:#6a6a62;background:#1a1a17;transition:all .2s}
+.servo.on{background:#0d2e26;color:#5dcaa5;border-color:#5dcaa5;font-weight:500}
+.anim-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.anim-item{padding:.65rem .75rem;border-radius:8px;
+           border:0.5px solid #2e2e2b;cursor:pointer;
+           background:#1a1a17;transition:all .15s}
+.anim-item.on{border-color:#7F77DD;background:#26215C}
+.anim-item.on .anim-name{color:#CECBF6}
+.anim-name{font-size:13px;font-weight:500;color:#e8e6de;margin-bottom:2px}
+.anim-sub{font-size:11px;color:#6a6a62}
+.audio-hidden{display:none}
+.footer{padding:.75rem 1.25rem;display:flex;justify-content:space-between;
+        align-items:center;background:#1a1a17}
+.footer-txt{font-size:11px;color:#6a6a62}
+.online{font-size:11px;color:#5dcaa5;display:flex;align-items:center;gap:4px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-title">♪ Caja Musical Laufey</div>
+  <div class="h-sub"><span class="dot" id="statusDot"></span>
+    <span id="statusTxt">Conectando...</span></div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Canciones</div>
+  <div id="listaCanciones"></div>
+</div>
+
+<div class="section">
+  <div class="nota-wrap">
+    <div class="nota-big" id="notaActual">—</div>
+    <div class="nota-sub" id="notaSub">esperando...</div>
+  </div>
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-times">
+    <span id="tiempoActual">0:00</span>
+    <span id="tiempoTotal">0:00</span>
+  </div>
+  <div class="player">
+    <div class="ctrl-btn" onclick="anterior()">&#9198;</div>
+    <div class="play-btn" id="playBtn" onclick="togglePlay()">&#9654;</div>
+    <div class="ctrl-btn" onclick="siguiente()">&#9197;</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Velocidad del eje (NEMA)</div>
+  <div class="speed-grid">
+    <div class="spd" onclick="setVelocidad(0,this)">Lento</div>
+    <div class="spd on" onclick="setVelocidad(1,this)">Normal</div>
+    <div class="spd" onclick="setVelocidad(2,this)">Rápido</div>
+    <div class="spd" onclick="setVelocidad(3,this)">Custom</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Servos activos</div>
+  <div class="servo-grid" id="servoGrid"></div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Animación del OLED</div>
+  <div class="anim-grid">
+    <div class="anim-item on" onclick="setAnimacion(0,this)">
+      <div class="anim-name">Pinkie Pie</div>
+      <div class="anim-sub">12 frames</div>
+    </div>
+    <div class="anim-item" onclick="setAnimacion(1,this)">
+      <div class="anim-name">Notas</div>
+      <div class="anim-sub">Solo texto</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-txt" id="ipTxt">IP: cargando...</div>
+  <div class="online"><span class="dot"></span> En línea</div>
+</div>
+
+<audio id="audioPlayer" class="audio-hidden"></audio>
+
+<script>
+const canciones = CANCIONES_JSON;
+let cancionActual = 0;
+let reproduciendo = false;
+const audio = document.getElementById('audioPlayer');
+
+function renderCanciones() {
+  const lista = document.getElementById('listaCanciones');
+  lista.innerHTML = canciones.map((c,i) => `
+    <div class="song-item ${i===cancionActual?'active':''}" onclick="seleccionarCancion(${i})">
+      <div class="song-num">${i+1}</div>
+      <div class="song-info">
+        <div class="song-name">${c.nombre}</div>
+        <div class="song-dur">${c.duracion}</div>
+      </div>
+      ${i===cancionActual && reproduciendo ? 
+        '<div class="bars"><div class="bar" style="height:6px;animation:b 0.8s ease-in-out infinite"></div><div class="bar" style="height:10px;animation:b 0.8s ease-in-out infinite 0.15s"></div><div class="bar" style="height:8px;animation:b 0.8s ease-in-out infinite 0.3s"></div></div>' 
+        : ''}
+    </div>`).join('');
+}
+
+function renderServos(activos) {
+  const grid = document.getElementById('servoGrid');
+  grid.innerHTML = Array.from({length:12},(_,i) => 
+    `<div class="servo ${activos[i]?'on':''}">${i+1}</div>`).join('');
+}
+
+function seleccionarCancion(i) {
+  cancionActual = i;
+  fetch('/seleccionar?i='+i);
+  renderCanciones();
+}
+
+function togglePlay() {
+  if (!reproduciendo) {
+    iniciar();
+  } else {
+    pausar();
+  }
+}
+
+function iniciar() {
+  if (canciones[cancionActual].url) {
+    audio.src = canciones[cancionActual].url;
+    audio.currentTime = 0;
+    audio.play();
+  }
+  fetch('/play?i='+cancionActual);
+  reproduciendo = true;
+  document.getElementById('playBtn').innerHTML = '&#9646;&#9646;';
+  renderCanciones();
+}
+
+function pausar() {
+  audio.pause();
+  fetch('/pause');
+  reproduciendo = false;
+  document.getElementById('playBtn').innerHTML = '&#9654;';
+  renderCanciones();
+}
+
+function anterior() {
+  seleccionarCancion((cancionActual - 1 + canciones.length) % canciones.length);
+  if (reproduciendo) iniciar();
+}
+
+function siguiente() {
+  seleccionarCancion((cancionActual + 1) % canciones.length);
+  if (reproduciendo) iniciar();
+}
+
+function setVelocidad(v, el) {
+  document.querySelectorAll('.spd').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+  fetch('/velocidad?v='+v);
+}
+
+function setAnimacion(a, el) {
+  document.querySelectorAll('.anim-item').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+  fetch('/animacion?a='+a);
+}
+
+// Actualizar estado desde ESP32
+function actualizarEstado() {
+  fetch('/estado')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('notaActual').textContent = d.nota || '—';
+      document.getElementById('notaSub').textContent = d.freq ? d.freq+' Hz · tecla '+d.tecla : 'esperando...';
+      document.getElementById('progFill').style.width = d.progreso+'%';
+      renderServos(d.servos || new Array(12).fill(0));
+      document.getElementById('statusDot').style.background = '#5dcaa5';
+      document.getElementById('statusTxt').textContent = 'Conectada';
+      document.getElementById('ipTxt').textContent = 'IP: '+d.ip;
+    }).catch(() => {
+      document.getElementById('statusDot').style.background = '#E24B4A';
+      document.getElementById('statusTxt').textContent = 'Sin conexión';
+    });
+}
+
+// Actualizar tiempo del audio
+audio.addEventListener('timeupdate', () => {
+  const t = audio.currentTime;
+  const dur = audio.duration || 0;
+  document.getElementById('tiempoActual').textContent = 
+    Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+  document.getElementById('tiempoTotal').textContent = 
+    Math.floor(dur/60)+':'+String(Math.floor(dur%60)).padStart(2,'0');
+  document.getElementById('progFill').style.width = (dur ? (t/dur*100) : 0)+'%';
+});
+
+audio.addEventListener('ended', () => {
+  fetch('/stop');
+  reproduciendo = false;
+  document.getElementById('playBtn').innerHTML = '&#9654;';
+  siguiente();
+});
+
+renderCanciones();
+renderServos(new Array(12).fill(0));
+setInterval(actualizarEstado, 400);
+</script>
+</body>
+</html>
+)rawliteral";
+
