@@ -1,10 +1,10 @@
-#include <Wire.h>
+  #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Adafruit_PWMServoDriver.h>
-#include "frames_pinkie.h"
+#include "frames_laufey.h"
 
 // ── Primero el struct Evento ──
 struct Evento { int tecla; int duracion; };
@@ -49,7 +49,7 @@ String NOMBRES_TECLAS[12] = {
 struct Cancion {
   const char* nombre;
   const char* url;
- const Evento* eventos;
+  const Evento* eventos;
   int totalEventos;
   long duracionMs;
   const char* duracion;
@@ -99,7 +99,7 @@ unsigned long tiempoInicioPausa = 0;
 int progresoActual = 0;
 String notaActualNombre = "";
 int servoActivo[12] = {0};
-int animacionActual = 0;
+int animacionActual = 0;  // 0=Laufey duerme, 1=Conejo, 2=Laufey chiquita
 bool audioListo = false;
 
 long pasosDados  = 0;
@@ -130,34 +130,26 @@ void animarOLED() {
   if (millis() - ultimoFrame > 200) {
     ultimoFrame = millis();
     display.clearDisplay();
-    if (animacionActual == 0) {
-      display.drawBitmap(0, 0, animacion[frameActual], 128, 64, WHITE);
-      display.setTextColor(BLACK);
-      display.setTextSize(1);
-      display.setCursor(2, 2);
-      if (regresando)        display.print("< Regresando...");
-      else if (pausado)      display.print("II Pausado");
-      else if (!audioListo)  display.print("Listo - da Play");
-      else                   display.print(canciones[cancionActual].nombre);
-      display.setCursor(2, 54);
-      display.print(notaActualNombre);
-      display.fillRect(0, 62, map(progresoActual, 0, 100, 0, 128), 2, BLACK);
-    } else {
-      display.setTextColor(SSD1306_WHITE);
-      display.setTextSize(2);
-      display.setCursor(5, 5);
-      display.print(notaActualNombre);
-      display.setTextSize(1);
-      display.setCursor(0, 36);
-      display.print(canciones[cancionActual].nombre);
-      display.drawRect(0, 48, 128, 7, SSD1306_WHITE);
-      display.fillRect(1, 49, map(progresoActual, 0, 100, 0, 126), 5, SSD1306_WHITE);
-      display.setCursor(0, 57);
-      if (regresando)    display.print("< Regresando...");
-      else if (pausado)  display.print("II Pausado");
-    }
+
+    // Calcular frame según animación seleccionada
+    // Grupo 0: frames 0-2, Grupo 1: frames 3-5, Grupo 2: frames 6-8
+    int frameOffset = animacionActual * 3;
+    int frameLocal  = frameOffset + (frameActual % 3);
+
+    display.drawBitmap(0, 0, animacion[frameLocal], 128, 64, WHITE);
+    display.setTextColor(BLACK);
+    display.setTextSize(1);
+    display.setCursor(2, 2);
+    if (regresando)        display.print("< Regresando...");
+    else if (pausado)      display.print("II Pausado");
+    else if (!audioListo)  display.print("Listo - da Play");
+    else                   display.print(canciones[cancionActual].nombre);
+    display.setCursor(2, 54);
+    display.print(notaActualNombre);
+    display.fillRect(0, 62, map(progresoActual, 0, 100, 0, 128), 2, BLACK);
+
     display.display();
-    frameActual = (frameActual + 1) % TOTAL_FRAMES;
+    frameActual = (frameActual + 1) % 3;
   }
 }
 
@@ -245,14 +237,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
        display:flex;align-items:center;justify-content:center;
        font-size:11px;color:#6a6a62;background:#1a1a17;transition:all .2s}
 .servo.on{background:#0d2e26;color:#5dcaa5;border-color:#5dcaa5;font-weight:500}
-.anim-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.anim-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 .anim-item{padding:.65rem .75rem;border-radius:8px;
            border:0.5px solid #2e2e2b;cursor:pointer;
            background:#1a1a17;transition:all .15s}
 .anim-item.on{border-color:#7F77DD;background:#26215C}
 .anim-item.on .anim-name{color:#CECBF6}
-.anim-name{font-size:13px;font-weight:500;color:#e8e6de;margin-bottom:2px}
-.anim-sub{font-size:11px;color:#6a6a62}
+.anim-name{font-size:12px;font-weight:500;color:#e8e6de;margin-bottom:2px}
+.anim-sub{font-size:10px;color:#6a6a62}
 .footer{padding:.75rem 1.25rem;display:flex;justify-content:space-between;
         align-items:center;background:#1a1a17}
 .footer-txt{font-size:11px;color:#6a6a62}
@@ -299,12 +291,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   <div class="sec-label">Animacion del OLED</div>
   <div class="anim-grid">
     <div class="anim-item on" onclick="setAnimacion(0,this)">
-      <div class="anim-name">Pinkie Pie</div>
-      <div class="anim-sub">12 frames</div>
+      <div class="anim-name">Laufey duerme</div>
+      <div class="anim-sub">ZZZ</div>
     </div>
     <div class="anim-item" onclick="setAnimacion(1,this)">
-      <div class="anim-name">Notas</div>
-      <div class="anim-sub">Solo texto</div>
+      <div class="anim-name">Conejo</div>
+      <div class="anim-sub">Meimei</div>
+    </div>
+    <div class="anim-item" onclick="setAnimacion(2,this)">
+      <div class="anim-name">Laufey chiquita</div>
+      <div class="anim-sub">Con alas</div>
     </div>
   </div>
 </div>
@@ -522,6 +518,7 @@ void setup() {
   });
   server.on("/animacion", []() {
     animacionActual = server.arg("a").toInt();
+    frameActual = 0;
     server.send(200, "text/plain", "ok");
   });
   server.on("/estado", []() {
