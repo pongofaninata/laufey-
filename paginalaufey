@@ -1,0 +1,314 @@
+// HTML laufey
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Caja Musical Laufey</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     background:#ABA47E;color:#B5AE84;max-width:420px;margin:0 auto}
+.header{background:#615C40;padding:1.2rem 1.25rem;border-bottom:0.5px solid #615C40}
+.h-title{font-size:18px;font-weight:500;margin-bottom:3px;color:#C4BE86}
+.h-sub{font-size:12px;color:#C4BE86;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block}
+.section{padding:1rem 1.25rem;border-bottom:0.5px solid #2e2e2b}
+.sec-label{font-size:11px;font-weight:500;text-transform:uppercase;
+           letter-spacing:.06em;color:#615C40;margin-bottom:.75rem}
+.song-item{display:flex;align-items:center;gap:10px;padding:.65rem .75rem;
+           border-radius:8px;border:0.5px solid #827F4F;margin-bottom:6px;
+           cursor:pointer;background:#615C40;transition:all .15s}
+.song-item.active{border-color:#DBA0B2;background:#DBA0B2}
+.song-item.active .song-name,.song-item.active .song-dur{color:#FFE0ED}
+.song-num{font-size:13px;color:#C4BE86;min-width:16px}
+.song-cover{width:36px;height:36px;border-radius:6px;object-fit:cover;
+            background:transparent;flex-shrink:0}
+.song-info{flex:1}
+.song-name{font-size:14px;font-weight:500;color:#C4BE86}
+.song-dur{font-size:12px;color:#C4BE86}
+.bars{display:flex;gap:2px;align-items:flex-end;height:16px}
+.bar{width:3px;border-radius:2px;background:#C4BE86}
+.nota-wrap{text-align:center;padding:1rem;background:#C4BE86;
+           border-radius:8px;margin-bottom:.75rem}
+.nota-big{font-size:32px;font-weight:500;color:#615C40}
+.nota-sub{font-size:11px;color:#736E3F;margin-top:3px}
+.prog-bar{width:100%;height:4px;background:#515F96;border-radius:20px;
+          overflow:hidden;margin-bottom:4px}
+.prog-fill{height:100%;background:#7F77DD;border-radius:20px;
+           transition:width .3s;width:0%}
+.prog-times{display:flex;justify-content:space-between;
+            font-size:11px;color:#615C40;margin-bottom:.75rem}
+.player{display:flex;align-items:center;justify-content:space-between}
+.play-btn{width:56px;height:56px;border-radius:50%;background:transparent;
+          display:flex;align-items:center;justify-content:center;
+          cursor:pointer;border:none;padding:0}
+.play-btn img{width:56px;height:56px;object-fit:contain;border-radius:50%}
+.ctrl-btn{width:44px;height:44px;border-radius:50%;border:none;
+          display:flex;align-items:center;justify-content:center;
+          cursor:pointer;background:transparent;padding:0}
+.ctrl-btn img{width:44px;height:44px;object-fit:contain}
+.estado-nema{padding:.5rem .75rem;border-radius:8px;background:#B39E40;
+             border:0.5px solid #B39E40;font-size:12px;color:#515F96;
+             margin-top:.5rem;display:flex;justify-content:space-between}
+.servo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.servo{aspect-ratio:1;border-radius:6px;border:0.5px solid #2e2e2b;
+       display:flex;align-items:center;justify-content:center;
+       font-size:11px;color:#8F96B8;background:#515F96;transition:all .2s}
+.servo.on{background:#515F96;color:#5dcaa5;border-color:#5dcaa5;font-weight:500}
+.anim-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.anim-item{border-radius:8px;border:none;cursor:pointer;
+           overflow:hidden;padding:0;background:transparent;transition:all .15s}
+.anim-item img{width:100%;height:100%;object-fit:cover;display:block;border-radius:8px}
+.anim-item.on{outline:3px solid #7F77DD}
+.anim-item .anim-name,.anim-item .anim-sub{display:none}
+.footer{padding:.75rem 1.25rem;display:flex;justify-content:space-between;
+        align-items:center;background:#A86D7F}
+.footer-txt{font-size:11px;color:#DBA0B2}
+.online{font-size:11px;color:#DBA0B2;display:flex;align-items:center;gap:4px}
+@keyframes b{
+  0%,100%{transform:scaleY(1)}
+  50%{transform:scaleY(1.6)}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="h-title">♪ Caja Musical Laufey</div>
+  <div class="h-sub">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusTxt">Conectando...</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Bewitched (2023)</div>
+  <div id="listaCanciones"></div>
+</div>
+
+<div class="section">
+  <div class="nota-wrap">
+    <div class="nota-big" id="notaActual">—</div>
+    <div class="nota-sub" id="notaSub">esperando...</div>
+  </div>
+  <div class="prog-bar">
+    <div class="prog-fill" id="progFill"></div>
+  </div>
+  <div class="prog-times">
+    <span id="tiempoActual">0:00</span>
+    <span id="tiempoTotal">0:00</span>
+  </div>
+  <div class="player">
+    <div class="ctrl-btn" onclick="anterior()">
+      <img id="imgAnterior" alt="anterior">
+    </div>
+    <button class="play-btn" onclick="togglePlay()">
+      <img id="imgPlay" alt="play">
+    </button>
+    <div class="ctrl-btn" onclick="siguiente()">
+      <img id="imgSiguiente" alt="siguiente">
+    </div>
+  </div>
+  <div class="estado-nema">
+    <span id="estadoNema">Eje: en reposo</span>
+    <span id="progNema">0%</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Servos activos</div>
+  <div class="servo-grid" id="servoGrid"></div>
+</div>
+
+<div class="section">
+  <div class="sec-label">Animación del OLED</div>
+  <div class="anim-grid">
+    <div class="anim-item on" onclick="setAnimacion(0,this)"><img id="imgAnim0" alt="ZZZ"></div>
+    <div class="anim-item" onclick="setAnimacion(1,this)"><img id="imgAnim1" alt="Meimei"></div>
+    <div class="anim-item" onclick="setAnimacion(2,this)"><img id="imgAnim2" alt="Alas"></div>
+    <div class="anim-item" onclick="setAnimacion(3,this)"><img id="imgAnim3" alt="Vinil"></div>
+    <div class="anim-item" onclick="setAnimacion(4,this)"><img id="imgAnim4" alt="Luz"></div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-txt" id="ipTxt">IP: cargando...</div>
+  <div class="online"><span class="dot"></span> En línea</div>
+</div>
+
+<audio id="audioPlayer" style="display:none"></audio>
+
+<!-- La biblioteca va primero, luego el código -->
+<script src="biblioteca.js"></script>
+<script>
+const canciones = [
+  { nombre: "Dreamer",                       duracion: "3:12", url: "", img: COVERS.st        },
+  { nombre: "Second Best",                   duracion: "2:22", url: "", img: COVERS.sec       },
+  { nombre: "Haunted",                       duracion: "1:55", url: "", img: COVERS.obs       },
+  { nombre: "Must Be Love",                  duracion: "2:22", url: "", img: COVERS.ha        },
+  { nombre: "While You Were Sleeping",       duracion: "2:24", url: "", img: COVERS.wwhile    },
+  { nombre: "Lovesick",                      duracion: "3:36", url: "", img: COVERS.sick      },
+  { nombre: "California and Me",             duracion: "2:49", url: "", img: COVERS.calif     },
+  { nombre: "Nocturne Interlude",            duracion: "1:48", url: "", img: COVERS.noc       },
+  { nombre: "Promise",                       duracion: "2:30", url: "", img: COVERS.promi     },
+  { nombre: "From the Start",               duracion: "2:23", url: "", img: COVERS.starrrrrt },
+  { nombre: "Misty",                         duracion: "0:50", url: "", img: COVERS.misty     },
+  { nombre: "Serendipity",                   duracion: "4:57", url: "", img: COVERS.sere      },
+  { nombre: "Letter to My 13 Year Old Self", duracion: "4:16", url: "", img: COVERS.n13       },
+  { nombre: "Bewitched",                     duracion: "5:52", url: "", img: COVERS.bew       },
+];
+
+let cancionActual = 0;
+let reproduciendo = false;
+const audio = document.getElementById('audioPlayer');
+
+function cargarAssets() {
+  document.getElementById('imgPlay').src      = ASSETS.play;
+  document.getElementById('imgAnterior').src  = ASSETS.anterior;
+  document.getElementById('imgSiguiente').src = ASSETS.siguiente;
+  document.getElementById('imgAnim0').src     = ASSETS.anim0;
+  document.getElementById('imgAnim1').src     = ASSETS.anim1;
+  document.getElementById('imgAnim2').src     = ASSETS.anim2;
+  document.getElementById('imgAnim3').src     = ASSETS.anim3;
+  document.getElementById('imgAnim4').src     = ASSETS.anim4;
+}
+
+function renderCanciones() {
+  const lista = document.getElementById('listaCanciones');
+  lista.innerHTML = canciones.map((c, i) => `
+    <div class="song-item ${i === cancionActual ? 'active' : ''}" onclick="seleccionarCancion(${i})">
+      <div class="song-num">${i + 1}</div>
+      ${c.img ? `<img class="song-cover" src="${c.img}" alt="${c.nombre}">` : '<div class="song-cover"></div>'}
+      <div class="song-info">
+        <div class="song-name">${c.nombre}</div>
+        <div class="song-dur">${c.duracion}</div>
+      </div>
+      ${i === cancionActual && reproduciendo
+        ? `<div class="bars">
+             <div class="bar" style="height:6px;animation:b 0.8s ease-in-out infinite"></div>
+             <div class="bar" style="height:10px;animation:b 0.8s ease-in-out infinite 0.15s"></div>
+             <div class="bar" style="height:8px;animation:b 0.8s ease-in-out infinite 0.3s"></div>
+           </div>`
+        : ''}
+    </div>`).join('');
+}
+
+function renderServos(activos) {
+  const grid = document.getElementById('servoGrid');
+  grid.innerHTML = Array.from({ length: 12 }, (_, i) =>
+    `<div class="servo ${activos[i] ? 'on' : ''}">${i + 1}</div>`
+  ).join('');
+}
+
+function seleccionarCancion(i) {
+  if (reproduciendo) {
+    fetch('/cambiar?i=' + i).then(() => {
+      cancionActual = i;
+      reproduciendo = false;
+      document.getElementById('imgPlay').src = ASSETS.play;
+      audio.pause();
+      renderCanciones();
+    });
+  } else {
+    cancionActual = i;
+    fetch('/seleccionar?i=' + i);
+    renderCanciones();
+  }
+}
+
+function togglePlay() {
+  if (!reproduciendo) iniciar();
+  else pausar();
+}
+
+function iniciar() {
+  if (canciones[cancionActual].url) {
+    audio.src = canciones[cancionActual].url;
+    audio.currentTime = 0;
+    audio.play().then(() => { fetch('/play?i=' + cancionActual); });
+  } else {
+    fetch('/play?i=' + cancionActual);
+  }
+  reproduciendo = true;
+  document.getElementById('imgPlay').src = ASSETS.pause;
+  renderCanciones();
+}
+
+function pausar() {
+  if (!audio.paused) {
+    audio.pause();
+    fetch('/pause');
+    document.getElementById('imgPlay').src = ASSETS.play;
+  } else {
+    audio.play();
+    fetch('/resume');
+    document.getElementById('imgPlay').src = ASSETS.pause;
+  }
+  reproduciendo = !audio.paused;
+}
+
+function anterior() {
+  seleccionarCancion((cancionActual - 1 + canciones.length) % canciones.length);
+}
+
+function siguiente() {
+  seleccionarCancion((cancionActual + 1) % canciones.length);
+}
+
+function setAnimacion(a, el) {
+  document.querySelectorAll('.anim-item').forEach(e => e.classList.remove('on'));
+  el.classList.add('on');
+  fetch('/animacion?a=' + a);
+}
+
+function actualizarEstado() {
+  fetch('/estado')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('notaActual').textContent = d.nota || '—';
+      document.getElementById('notaSub').textContent = d.freq ? d.freq + ' Hz' : 'esperando...';
+      document.getElementById('progFill').style.width = d.progreso + '%';
+      document.getElementById('estadoNema').textContent =
+        d.regresando ? '< Regresando...' : d.tocando ? '> Avanzando' : 'Eje: en reposo';
+      document.getElementById('progNema').textContent = Math.round(d.progNema) + '%';
+      renderServos(d.servos || new Array(12).fill(0));
+      document.getElementById('statusDot').style.background = '#5dcaa5';
+      document.getElementById('statusTxt').textContent = 'Conectada';
+      document.getElementById('ipTxt').textContent = 'IP: ' + d.ip;
+      if (d.fin && reproduciendo) {
+        reproduciendo = false;
+        document.getElementById('imgPlay').src = ASSETS.play;
+        siguiente();
+      }
+    })
+    .catch(() => {
+      document.getElementById('statusDot').style.background = '#E24B4A';
+      document.getElementById('statusTxt').textContent = 'Sin conexión';
+    });
+}
+
+audio.addEventListener('timeupdate', () => {
+  const t = audio.currentTime, dur = audio.duration || 0;
+  document.getElementById('tiempoActual').textContent =
+    Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+  document.getElementById('tiempoTotal').textContent =
+    Math.floor(dur / 60) + ':' + String(Math.floor(dur % 60)).padStart(2, '0');
+});
+
+audio.addEventListener('ended', () => {
+  fetch('/stop');
+  reproduciendo = false;
+  document.getElementById('imgPlay').src = ASSETS.play;
+  siguiente();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  cargarAssets();
+  renderCanciones();
+  renderServos(new Array(12).fill(0));
+  setInterval(actualizarEstado, 400);
+});
+</script>
+</body>
+</html>
